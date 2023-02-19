@@ -2,6 +2,7 @@ import React, { Component } from "react";
 import { connect } from "react-redux";
 import { push } from "connected-react-router";
 import * as actions from "../../store/actions";
+import { handleLoginApi } from "../../services/userService";
 
 import "./Login.scss";
 
@@ -12,6 +13,7 @@ class Login extends Component {
       username: "",
       password: "",
       isShowPassword: false,
+      errMessage: "",
     };
   } // constructor la ham tao, neu Login truyen props xuong thi co the su dung props nay
 
@@ -21,8 +23,26 @@ class Login extends Component {
   handleOnChangePassword = (event) => {
     this.setState({ password: event.target.value });
   };
-  handleLogin = () => {
-    alert(this.state.username);
+  handleLogin = async () => {
+    this.setState({ errMessage: "" });
+    try {
+      let data = await handleLoginApi(this.state.username, this.state.password);
+      if (data && data.errCode !== 0) {
+        this.setState({
+          errMessage: data.message,
+        });
+      }
+      if (data && data.errCode === 0) {
+        console.log("hi", data.userData);
+        this.props.userLoginSuccess(data.userData);
+      }
+    } catch (e) {
+      if (e.response) {
+        if (e.response.data) {
+          this.setState({ errMessage: e.response.data.message });
+        }
+      }
+    }
   };
   handleShowHidePassword = () => {
     this.setState({ isShowPassword: !this.state.isShowPassword });
@@ -64,7 +84,7 @@ class Login extends Component {
                   }}
                 >
                   <i
-                    class={
+                    className={
                       this.state.isShowPassword
                         ? "fas fa-eye"
                         : "fas fa-eye-slash"
@@ -72,6 +92,9 @@ class Login extends Component {
                   ></i>
                 </span>
               </div>
+            </div>
+            <div className="col-12" style={{ color: "red" }}>
+              {this.state.errMessage}
             </div>
             <div className="col-12 ">
               <button
@@ -91,8 +114,8 @@ class Login extends Component {
             </div>
 
             <div className="col-12 social-login mt-3">
-              <i class="fab fa-google-plus-g google"></i>
-              <i class="fab fa-facebook-f facebook"></i>
+              <i className="fab fa-google-plus-g google"></i>
+              <i className="fab fa-facebook-f facebook"></i>
             </div>
           </div>
         </div>
@@ -110,9 +133,8 @@ const mapStateToProps = (state) => {
 const mapDispatchToProps = (dispatch) => {
   return {
     navigate: (path) => dispatch(push(path)),
-    adminLoginSuccess: (adminInfo) =>
-      dispatch(actions.adminLoginSuccess(adminInfo)),
-    adminLoginFail: () => dispatch(actions.adminLoginFail()),
+    userLoginSuccess: (userInfo) =>
+      dispatch(actions.userLoginSuccess(userInfo)),
   };
 };
 
